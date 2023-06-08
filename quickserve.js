@@ -2,9 +2,11 @@
 
 // requirements
 const
-  fs = require('fs'),
+  fs = require('fs'), // file system
   http = require('http'),
   qs = require('querystring'),
+  ws = require('ws'), // websocket
+  chokidar = require('chokidar'), // file watcher
   // ---
   n10 = require('./1010api2-node');
 
@@ -100,14 +102,11 @@ function relay_api(req, res, c, data) {
 /// c is the API2Client, data is the post body (if any)
 function relay_nonapi(url, req, res, c, data) {
   let rr, args = {method:req.method, headers: new Headers()};
-  console.log('headers:' + JSON.stringify(req.headers));
   for (const [k,v] of Object.entries(req.headers)) {
-    console.log(`k:${k} -> v:${v}`);
     if (k == 'host' || k === 'cookie') continue;
     else args.headers.set(k,v)}
   if (c.isLoggedIn()) args.headers.set('Cookie', `${c.cookie()}; siduids=${c.sid}|${c.uid}`);
   if (req.method === 'POST') args.body = data;
-  console.log(`fetch ${url} (${JSON.stringify(args)})`);
   fetch(url, args)
     .then(rr0 => { rr = rr0; return rr.text()})
     .then(text => {
@@ -151,5 +150,24 @@ const srv = http.createServer((req, res)=> {
       req.on('end', function() { dispatch(req, res, data)})})}
   else { dispatch(req, res) }});
 
+/// websocket server
+const wss = new ws.Server({server: srv, path: '/ws'});
+wss.on('connection', (ws)=> {
+  ws.send('something');
+  ws.on('message', (msg)=> {
+    console.log('received: ' + msg); })});
+function broadcast(msg) {
+  console.log('broadcasting: ' + JSON.stringify(msg));
+  wss.clients.forEach(c => c.send(JSON.stringify(msg)))}
+
+/// file watcher
+const watcher = chokidar.watch('.',
+  {ignored: /(^|[\/\\])\../, persistent: true});
+watcher.on('change', (path,info) => {
+  console.log(`file changed: ${[path, JSON.stringify(info)]}`);
+  if (path==='index.html') broadcast(["refresh"]);
+  else if (path.endsWith('.xml')) broadcast(["reload", path])});
+
+// start server
 console.log(`listening at http://${HOST}:${PORT}/`);
 srv.listen(PORT, HOST);

@@ -6,6 +6,11 @@ This directory contains the start on a development tool for 1010data quickapps.
 ## quick start
 
 - install [node.js](https://nodejs.org/en)
+- install the dependencies (`ws`, `chokidar`, etc) with:
+
+      cd /path/to/quickserve
+      npm install
+
 - run the dev server with this command:
 
       cd /path/to/quickserve

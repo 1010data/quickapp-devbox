@@ -10,61 +10,50 @@
   </script>
   <style>
     body, th, td { font-family: Calibri, Arial, sans-serif; }
-    html, body, #app, main, iframe { padding:0; margin:0; height:100%; width:100% }
-    th, td { border: solid silver 1px; padding: 2px; background: white; }
-    th { background: silver; }
-    label { display: block; margin-top: 20px; }
+    html, body, #app, main, iframe, nav {
+      padding:0; margin:0; height:100%; width:100%; background: #999}
+    html, body, #app { height:100%; overflow:hidden}
+    #app { display:flex; flex-direction:column; }
+    nav { background: #000;  height:auto; padding:2px; flex:0; color: darkorange; }
+    iframe { border: none; background: white; flex:1; }
+    *[v-if] { display: none; }
   </style>
 </head>
 <body>
   <div id="app">
-    <nav>QuickServe: {{appPath}} &rarr; tag {{tag}}</nav>
-    <main v-if="tag!=0"><iframe :src="iframeSrc"></iframe></main>
+    <nav><strong>QuickServe</strong><span v-if="appPath">: {{appPath}} &rarr; tag {{tag}}</span></nav>
+    <main v-if="tag!=0">
+      <iframe :src="iframeSrc"></iframe>
+    </main>
   </div>
 </body>
 <script>
 require(['Vue', '1010api2-html'], function(Vue, api2) {
   // --- app logic starts here ------------------------------------
 
-  const data = { tag:0, widgets:[], model: {}, scope:{}, appPath: 'quickapp.xml'}
-        ac = new api2.API2Client(),
-        xr = new XMLHttpRequest();
+  const ac = new api2.API2Client();
 
-  let vm = new Vue({
-    el: '#app', data,
+  const vm = new Vue({
+    el: '#app',
+    data: ()=>({tag: 0, appPath: 'quickapp.xml'}),
     methods: {
-      setState(e) { this.interact({state: e.value}) },
-      setStation(e) { if (e.target.checked) this.interact({id: e.target.value })},
-      interact(args) {
-        ac.call(data.tag.toString(), args).then(r=> {
-          handleWidgetTable(ac, data, r);
-          Object.keys(r.changes).forEach(k => Vue.set(data.scope, k, r.changes[k])); })
-        .catch(e=>{
-          console.log('error on interact', e);
-          if (e instanceof XMLHttpRequest && e.status===403) document.location = '/!logout'; }); }},
+      refresh(path) {
+        fetch(this.appPath).then(r=>r.text()).then(xml=>{
+          ac.call('new', {xml}).then(r=> this.tag = r.tag)})}},
     computed: {
-      iframeSrc: function() { return '/cgi-bin/remote/quickapp.k?tag_=' + data.tag },
-      dateStr: {
-        get() {
-          if (!this.model.date) return '';
-          return this.model.date.toString().replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3') },
-        set(v) { this.model.date = parseInt(v.replaceAll('-','')); this.interact({date: this.model.date}) } },
-      stateCodes: function() {
-        var res = this.model['states']['state'].map(x=>x); // TODO: make this not change
-        return res.sort(); }}});
+      iframeSrc() { return '/cgi-bin/remote/quickapp.k?tag_=' + this.tag }}});
 
-  // fetch macro code and run it as a quickapp
-  xr.open('GET', data.appPath);
-  xr.onload = function() {
-    ac.call('new', {xml: xr.responseText})
-      .then(r=> ac.call('/' + (data.tag = r.tag), { method_:'GET', fmt_:'json.rows' }))
-      .catch(e=>{
-        console.log('error running quickapp:', e);
-        if (e instanceof XMLHttpRequest && e.status===403) document.location = '/!logout'; }); };
-  xr.send();
+  const ws = new WebSocket(`ws://${document.location.hostname}:${document.location.port}/ws`);
+  ws.onmessage = (e)=>{
+    const msg = JSON.parse(e.data);
+    console.log(msg)
+    if (msg[0] == 'reload') { vm.refresh(msg[1]) }};
+
+  // initial load of the quickapp
+  vm.refresh();
 
   // expose all this stuff for debug purposes
-  window.vm = vm; window.data = data; window.ac=ac;
+  window.vm = vm; window.ac=ac;
 });
 </script>
 </html>
