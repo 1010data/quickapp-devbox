@@ -1,0 +1,36 @@
+<html>
+<head>
+  <title>Headless Quickapps: Log in</title>
+  <style type="text/css">
+    label { display: block; width:100px; text-align: right; float: left; clear: left; }
+    input[type=text], input[type=password] { display: block; float: left; width: 200px; margin-left: 5px; }
+    input[type=submit] { margin-left:105px; margin-top:10px; }
+  </style>
+</head>
+<body>
+
+<form name="cred" action="/login" method="post">
+  <label>hostname:</label> <input type="text" name="host" value=""/>
+  <label>version:</label>  <input type="text" name="ver" value=""/>
+  <label>username:</label> <input type="text" name="uid"/>
+  <label>password:</label> <input type="password" name="pwd"/>
+  <br style="clear:both"/> <input type="submit"/>
+</form>
+
+<script>
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/.last-login.json');
+  xhr.addEventListener('load', function(res){
+    try {
+      var last = JSON.parse(xhr.response);
+      var cred = document.cred;
+      cred.host.value = last.host;
+      cred.uid.value = last.uid;
+      cred.ver.value = last.ver;
+      cred.pwd.focus();
+    } catch (e) { console.trace(e); } });
+  xhr.send();
+</script>
+
+</body>
+</html>

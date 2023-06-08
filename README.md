@@ -1,2 +1,19 @@
-# quickapp-devserver
-A tool for local development of quickapps on the 1010data platform.
+
+# quickserve
+
+This directory contains the start on a development tool for 1010data quickapps.
+
+## quick start
+
+- install [node.js](https://nodejs.org/en)
+- run the dev server with this command:
+
+      cd /path/to/quickserve
+      node quickserve.js quickapp.xml
+
+- visit http://localhost:8080/
+- fill out the form to log into a 1010 environment.
+- quickserve uploads `quickapp.xml` via API2.
+- an iframe appears, with the quickapp displayed.
+- edit and save the message in `quickapp.xml`
+- the xml is re-uploaded and the iframe is refreshed.

@@ -1,0 +1,10 @@
+<macro>
+  <dynamic>
+    <layout arrange_="v" background_="orange"
+            width_="640" height_="480">
+      <widget class_="text"
+              background_="#333" color_="white"
+              text_="hello, world!"/>
+    </layout>
+  </dynamic>
+</macro>
