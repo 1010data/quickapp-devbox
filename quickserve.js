@@ -153,7 +153,6 @@ const srv = http.createServer((req, res)=> {
 /// websocket server
 const wss = new ws.Server({server: srv, path: '/ws'});
 wss.on('connection', (ws)=> {
-  ws.send('something');
   ws.on('message', (msg)=> {
     console.log('received: ' + msg); })});
 function broadcast(msg) {

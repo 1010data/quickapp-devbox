@@ -35,9 +35,10 @@ require(['Vue', '1010api2-html'], function(Vue, api2) {
 
   const vm = new Vue({
     el: '#app',
-    data: ()=>({tag: 0, appPath: 'quickapp.xml'}),
+    data: ()=>({tag: 0, appPath: ''}),
     methods: {
-      refresh(path) {
+      reload(path) {
+        this.appPath = path;
         fetch(this.appPath).then(r=>r.text()).then(xml=>{
           ac.call('new', {xml}).then(r=> this.tag = r.tag)})}},
     computed: {
@@ -47,10 +48,13 @@ require(['Vue', '1010api2-html'], function(Vue, api2) {
   ws.onmessage = (e)=>{
     const msg = JSON.parse(e.data);
     console.log(msg)
-    if (msg[0] == 'reload') { vm.refresh(msg[1]) }};
+    switch(msg[0]) {
+      case 'reload': vm.reload(msg[1]); break;
+      case 'refresh': window.location.reload(); break;
+      default: break}};
 
   // initial load of the quickapp
-  vm.refresh();
+  vm.reload("quickapp.xml");
 
   // expose all this stuff for debug purposes
   window.vm = vm; window.ac=ac;
