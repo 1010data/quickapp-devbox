@@ -15,13 +15,19 @@
     html, body, #app { height:100%; overflow:hidden}
     #app { display:flex; flex-direction:column; }
     nav { background: #000;  height:auto; padding:2px; flex:0; color: darkorange; }
+    nav a { color: dodgerblue;  }
+    #app-path { color: white }
     iframe { border: none; background: white; flex:1; }
     *[v-if] { display: none; }
   </style>
 </head>
 <body>
   <div id="app">
-    <nav><strong>QuickServe</strong><span v-if="appPath">: {{appPath}} &rarr; tag {{tag}}</span></nav>
+    <nav>
+      <strong>QuickServe</strong>
+      <span id="app-path" v-if="appPath">{{appPath}}</span>
+      <span v-if="tag">&rarr; <a :href="remoteURL" target="_blank">tag {{tag}}</a></span>
+    </nav>
     <main v-if="tag!=0">
       <iframe :src="iframeSrc"></iframe>
     </main>
@@ -35,13 +41,14 @@ require(['Vue', '1010api2-html'], function(Vue, api2) {
 
   const vm = new Vue({
     el: '#app',
-    data: ()=>({tag: 0, appPath: ''}),
+    data: ()=>({tag: 0, appPath: '', tenBox:'mwallace.dev.edge.1010data.com', tenVer:'beta-19.58'}),
     methods: {
       reload(path) {
         this.appPath = path;
         fetch(this.appPath).then(r=>r.text()).then(xml=>{
           ac.call('new', {xml}).then(r=> this.tag = r.tag)})}},
     computed: {
+      remoteURL() { return `http://${this.tenBox}/cgi-bin/${this.tenVer}/quickapp.k?tag_=${this.tag}` },
       iframeSrc() { return '/cgi-bin/remote/quickapp.k?tag_=' + this.tag }}});
 
   const ws = new WebSocket(`ws://${document.location.hostname}:${document.location.port}/ws`);
@@ -49,12 +56,10 @@ require(['Vue', '1010api2-html'], function(Vue, api2) {
     const msg = JSON.parse(e.data);
     console.log(msg)
     switch(msg[0]) {
+      case 'setup': [this.tenBox, this.tenVer, this.appPath]= msg[1]; vm.reload(this.appPath); break;
       case 'reload': vm.reload(msg[1]); break;
       case 'refresh': window.location.reload(); break;
       default: break}};
-
-  // initial load of the quickapp
-  vm.reload("quickapp.xml");
 
   // expose all this stuff for debug purposes
   window.vm = vm; window.ac=ac;

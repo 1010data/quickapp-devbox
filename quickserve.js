@@ -123,7 +123,7 @@ function relay_cgi(req, res, c, data) {
   relay_nonapi(url, req, res, c, data)}
 
 function dispatch(req, res, data) {
-  console.log(req.method + ' ' + req.url + ' ' + JSON.stringify(data));
+  console.log(req.method + ' ' + req.url + ' ' + JSON.stringify(data||''));
   if (req.url === '/login') login(res, qs.parse(data));   // login uses a normal form post
   else if (!SESS.client && !req.url.endsWith('.json')) staticFile(res, 'login.html');
   else if (req.url === '/!logout') logout(res);
@@ -150,9 +150,12 @@ const srv = http.createServer((req, res)=> {
       req.on('end', function() { dispatch(req, res, data)})})}
   else { dispatch(req, res) }});
 
+let appPath = process.argv[2] || 'quickapp.xml';
+
 /// websocket server
 const wss = new ws.Server({server: srv, path: '/ws'});
 wss.on('connection', (ws)=> {
+  ws.send(JSON.stringify(['setup', [SESS.client.box, SESS.client.ver, appPath]]));
   ws.on('message', (msg)=> {
     console.log('received: ' + msg); })});
 function broadcast(msg) {
